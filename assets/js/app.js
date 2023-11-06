@@ -1,6 +1,6 @@
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
-import "./user_socket.js"
+import socket from "./user_socket.js"
 
 // You can include dependencies in two ways.
 //
@@ -27,8 +27,8 @@ let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToke
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
-window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
+window.addEventListener("phx:page-loading-start", info => topbar.delayedShow(200))
+window.addEventListener("phx:page-loading-stop", info => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
@@ -64,7 +64,7 @@ function sendMessage() {
   });
 
   msg.value = '';                // reset the message input field for next message.
-  window.scrollTo(0, document.documentElement.scrollHeight) // scroll to the end of the page on send
+  window.scrollTo(0, document.body.scrollHeight); // scroll to the end of the page on send
 }
 
 // Render the message with Tailwind styles
