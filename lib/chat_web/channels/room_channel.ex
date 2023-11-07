@@ -1,5 +1,6 @@
 defmodule ChatWeb.RoomChannel do
   use ChatWeb, :channel
+  alias ChatWeb.Presence
 
   @impl true
   def join("room:lobby", payload, socket) do
@@ -22,9 +23,23 @@ defmodule ChatWeb.RoomChannel do
   # broadcast to everyone in the current topic (room:lobby).
   @impl true
   def handle_in("shout", payload, socket) do
-    Chat.Message.changeset(%Chat.Message{}, payload) |> Chat.Repo.insert
-    broadcast(socket, "shout", payload)
+    # Insert message in database
+    {:ok, msg} = Chat.Message.changeset(%Chat.Message{}, payload) |> Chat.Repo.insert()
+
+    # Assigning name to socket assigns and tracking presence
+    socket
+      |> assign(:person_name, msg.name)
+      |> track_presence()
+      |> broadcast("shout", Map.put_new(payload, :id, msg.id))
+
     {:noreply, socket}
+  end
+
+  defp track_presence(%{assigns: %{person_name: person_name}} = socket) do
+    Presence.track(socket, person_name, %{
+      online_at: inspect(System.system_time(:second))
+    })
+    socket
   end
 
   # Add authorization logic here as required.
@@ -41,6 +56,10 @@ defmodule ChatWeb.RoomChannel do
         message: msg.message,
         inserted_at: msg.inserted_at,
       }) end)
+
+    # Send currently online people in lobby
+    push(socket, "presence_state", Presence.list("room:lobby"))
+
     {:noreply, socket} # :noreply
   end
 end
