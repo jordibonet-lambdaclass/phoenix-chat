@@ -64,7 +64,8 @@ function sendMessage() {
   });
 
   msg.value = '';                // reset the message input field for next message.
-  window.scrollTo(0, document.body.scrollHeight); // scroll to the end of the page on send
+  window.scrollTo(0, document.documentElement.scrollHeight) // scroll to the end of the page on send for desktop
+  ul.scrollTo(0, ul.scrollHeight)                           // scroll to the end of the page on send for mobile (THIS IS THE NEW LINE)
 }
 
 // Render the message with Tailwind styles
@@ -119,4 +120,70 @@ function formatTime(datetime) {
   return ("0" + m.getUTCHours()).slice(-2) + ":"
     + ("0" + m.getUTCMinutes()).slice(-2) + ":"
     + ("0" + m.getUTCSeconds()).slice(-2);
+}
+
+const peopleListMobile = document.getElementById('people_online-list-mobile');      // online people list mobile
+const peopleListDesktop = document.getElementById('people_online-list-desktop');      // online people list desktop
+
+// This function will be probably caught when the person first enters the page
+channel.on('presence_state', function (payload) {
+  // Array of objects with id and name
+  const currentlyOnlinepeople = Object.entries(payload).map(elem => ({name: elem[0], id: elem[1].metas[0].phx_ref}))
+    
+  updateOnlinePeopleList(currentlyOnlinepeople)
+})
+
+// Listening to presence events whenever a person leaves or joins
+channel.on('presence_diff', function (payload) {
+  if(payload.joins && payload.leaves) {
+    // Array of objects with id and name
+    const currentlyOnlinepeople = Object.entries(payload.joins).map(elem => ({name: elem[0], id: elem[1].metas[0].phx_ref}))
+    const peopleThatLeft = Object.entries(payload.leaves).map(elem => ({name: elem[0], id: elem[1].metas[0].phx_ref}))
+
+    updateOnlinePeopleList(currentlyOnlinepeople)
+    removePeopleThatLeft(peopleThatLeft)
+  }
+});
+
+function updateOnlinePeopleList(currentlyOnlinepeople) {
+    // Add joined people
+    for (var i = currentlyOnlinepeople.length - 1; i >= 0; i--) {
+      const name = currentlyOnlinepeople[i].name
+      const id = name + "-" + currentlyOnlinepeople[i].id
+  
+      if (document.getElementById(name) == null) {
+        var liMobile = document.createElement("li"); // create new person list item DOM element for mobile
+        var liDesktop = document.createElement("li"); // create new person list item DOM element for desktop
+        
+        liMobile.id = id + '_mobile'
+        liDesktop.id = id + '_desktop'
+        liMobile.innerHTML = `<caption>${sanitizeString(name)}</caption>`
+        liDesktop.innerHTML = `<caption>${sanitizeString(name)}</caption>`
+
+        peopleListMobile.appendChild(liMobile);                    // append to  peoplelist
+        peopleListDesktop.appendChild(liDesktop);                    // append to  peoplelist
+      }
+    }
+}
+
+function removePeopleThatLeft(peopleThatLeft) {
+  // Remove people that left
+  for (var i = peopleThatLeft.length - 1; i >= 0; i--) {
+    const name = peopleThatLeft[i].name
+    const id = name + "-" + peopleThatLeft[i].id
+
+    const personThatLeftMobile = document.getElementById(id + '_mobile')
+    const personThatLeftDesktop = document.getElementById(id +  '_desktop')
+
+    if (personThatLeftMobile != null && personThatLeftDesktop != null) {
+      peopleListMobile.removeChild(personThatLeftMobile);         // remove the person from list mobile
+      peopleListDesktop.removeChild(personThatLeftDesktop);        // remove the person from list desktop
+    }
+  }
+}
+
+
+function sanitizeString(str){
+  str = str.replace(/[^a-z0-9áéíóúñü \.,_-]/gim,"");
+  return str.trim();
 }
