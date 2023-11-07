@@ -15,6 +15,7 @@ defmodule Chat.Application do
       # Start a worker by calling: Chat.Worker.start_link(arg)
       # {Chat.Worker, arg},
       # Start to serve requests, typically the last entry
+      ChatWeb.Presence,
       ChatWeb.Endpoint
     ]
 
